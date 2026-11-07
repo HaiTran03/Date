@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>A Little Adventure 🗺️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#e6f0fb; --paper2:#d3e3f6; --ink:#2c3e5c; --muted:#7489a8;
+    --accent:#5b8fd9; --accent2:#ffd9a8; --green:#6fbf9e; --line:#9fbbe0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);
+    background:
+      radial-gradient(circle at 20% 10%, #f7fbff 0, transparent 40%),
+      radial-gradient(circle at 80% 90%, #cfe0f7 0, transparent 45%),
+      var(--paper);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    overflow-x:hidden;
+  }
+  header{text-align:center;padding:28px 20px 6px;max-width:440px}
+  header .eyebrow{font-family:'Patrick Hand',cursive;color:var(--accent);font-size:18px;letter-spacing:.5px}
+  header h1{font-size:30px;font-weight:800;line-height:1.15;margin:4px 0 6px}
+  header p{color:var(--muted);font-size:14px}
+  .progress{display:flex;gap:6px;justify-content:center;margin-top:12px}
+  .progress span{width:28px;height:6px;border-radius:9px;background:var(--paper2);transition:.4s}
+  .progress span.on{background:var(--accent)}
+
+  /* ---------- MAP ---------- */
+  .map{position:relative;width:min(92vw,420px);aspect-ratio:360/720;margin:6px auto 30px}
+  .map svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .deco{position:absolute;font-size:22px;opacity:.75;transform:translate(-50%,-50%);pointer-events:none;user-select:none}
+  .label-start{position:absolute;transform:translateY(-50%);font-family:'Patrick Hand',cursive;font-size:16px;
+    color:var(--ink);line-height:1.25;white-space:nowrap;background:rgba(230,240,251,.85);padding:2px 6px;border-radius:6px}
+  .label-start small{display:block;color:var(--accent);font-size:15px}
+
+  .station{
+    position:absolute;transform:translate(-50%,-50%);border:none;cursor:pointer;
+    width:66px;height:66px;border-radius:50%;font-size:30px;
+    background:#fff;box-shadow:0 4px 0 #bcd2ee,0 8px 18px rgba(40,80,140,.15);
+    display:grid;place-items:center;transition:transform .25s, filter .3s, opacity .3s;
+  }
+  .station .name{
+    position:absolute;top:74px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-family:'Patrick Hand',cursive;font-size:17px;color:var(--ink);
+    background:var(--paper);padding:0 6px;border-radius:6px;
+  }
+  .station.locked{filter:grayscale(1);opacity:.55;cursor:not-allowed}
+  .station.locked::after{content:'🔒';position:absolute;font-size:16px;right:-4px;top:-4px}
+  .station.active{animation:pulse 1.6s infinite}
+  .station.done::after{content:'✓';position:absolute;right:-4px;top:-4px;width:22px;height:22px;border-radius:50%;
+    background:var(--green);color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center}
+  .station:not(.locked):active{transform:translate(-50%,-50%) scale(.92)}
+  .station.gift{width:78px;height:78px;font-size:38px;background:linear-gradient(145deg,#fff,#dceaff)}
+  .station.gift.active{animation:shake 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 4px 0 #bcd2ee,0 0 0 0 rgba(91,143,217,.55)}70%{box-shadow:0 4px 0 #bcd2ee,0 0 0 18px rgba(91,143,217,0)}100%{box-shadow:0 4px 0 #bcd2ee,0 0 0 0 rgba(91,143,217,0)}}
+  @keyframes shake{0%,70%,100%{transform:translate(-50%,-50%) rotate(0)}75%{transform:translate(-50%,-50%) rotate(-12deg)}80%{transform:translate(-50%,-50%) rotate(10deg)}85%{transform:translate(-50%,-50%) rotate(-8deg)}90%{transform:translate(-50%,-50%) rotate(6deg)}}
+
+  .traveler{position:absolute;font-size:30px;transform:translate(-50%,-80%);pointer-events:none;z-index:5;transition:filter .2s}
+  .traveler.flip{transform:translate(-50%,-80%) scaleX(-1)}
+
+  .hint{font-family:'Patrick Hand',cursive;font-size:18px;color:var(--accent);text-align:center;min-height:26px;margin-top:-14px;padding:0 20px}
+
+  /* ---------- MODAL ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(44,62,92,.4);backdrop-filter:blur(3px);
+    display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:.3s;z-index:20}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .card{
+    width:min(100%,460px);max-height:90vh;overflow:auto;background:#f8fbff;border-radius:26px 26px 0 0;
+    padding:26px 22px 28px;transform:translateY(40px);transition:.35s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow:0 -10px 40px rgba(0,0,0,.15);
+  }
+  @media(min-width:520px){.overlay{align-items:center}.card{border-radius:26px}}
+  .overlay.show .card{transform:none}
+  .card .big{font-size:52px;text-align:center}
+  .card .tag{display:block;text-align:center;font-family:'Patrick Hand',cursive;color:var(--accent);font-size:18px;margin-top:4px}
+  .card h2{text-align:center;font-size:24px;margin:2px 0 14px}
+  .info{background:var(--paper);border-radius:14px;padding:12px 14px;display:grid;
+    grid-template-columns:max-content 1fr;column-gap:14px;row-gap:8px;font-size:14px;margin-bottom:14px;align-items:baseline}
+  .info div{display:contents}
+  .info b{color:var(--muted);font-weight:600;white-space:nowrap}
+  .desc{font-size:15px;line-height:1.6;margin-bottom:16px}
+  .q{font-weight:700;margin-bottom:10px}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .choice{border:2px solid var(--paper2);background:#fff;border-radius:14px;padding:12px 8px;font:inherit;font-size:14px;cursor:pointer;transition:.2s}
+  .choice .e{font-size:24px;display:block;margin-bottom:2px}
+  .choice.sel{border-color:var(--accent);background:#eaf2fd;transform:translateY(-2px)}
+  .btn{width:100%;border:none;border-radius:16px;padding:15px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;
+    background:var(--accent);color:#fff;box-shadow:0 4px 0 #3f6fb5;transition:.15s}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3f6fb5}
+  .btn:disabled{background:#c9d6e8;box-shadow:0 4px 0 #a9bad3;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weight:600}
+
+  /* ticket */
+  .ticket{display:flex;border-radius:14px;overflow:hidden;margin-bottom:16px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.08))}
+  .ticket .l{flex:1;background:var(--ink);color:#fff;padding:14px 16px}
+  .ticket .l small{opacity:.6;font-size:11px;letter-spacing:1px}
+  .ticket .l .t{font-size:18px;font-weight:800;margin:2px 0 8px}
+  .ticket .l .row{display:flex;gap:18px;font-size:12px}
+  .ticket .l .row b{display:block;font-size:15px}
+  .ticket .r{width:84px;background:var(--accent2);display:grid;place-items:center;border-left:2px dashed var(--ink);
+    font-family:'Patrick Hand',cursive;font-size:15px;text-align:center;color:var(--ink);padding:6px}
+
+  /* letter */
+  .letter{background:#fff;border-radius:16px;padding:20px;border:1px solid var(--paper2);
+    font-family:'Patrick Hand',cursive;font-size:20px;line-height:1.5;margin-bottom:16px;white-space:pre-line;
+    background-image:repeating-linear-gradient(transparent 0 29px,#e1ecf9 29px 30px);}
+  .summary{background:var(--paper);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.8;margin-bottom:16px}
+  .btn-row{position:relative;display:flex;gap:10px;min-height:56px}
+  .btn-row .btn{flex:1}
+  #noBtn{position:relative;transition:transform .25s}
+  .done-screen{text-align:center}
+  .done-screen .summary{text-align:left}
+  .done-screen .big{font-size:64px}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:30}
+  footer{font-size:12px;color:var(--muted);padding:0 0 24px;text-align:center}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1>A Little Adventure</h1>
+  <p id="subtitle"></p>
+  <div class="progress" id="progress"><span></span><span></span><span></span><span></span></div>
+</header>
+
+<div class="map" id="map">
+  <svg viewBox="0 0 360 720" preserveAspectRatio="none">
+    <path id="road" d="M180 50 C 180 120, 90 130, 90 200 S 270 290, 270 360 S 90 450, 90 520 S 180 610, 180 660"
+      fill="none" stroke="var(--line)" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 12"/>
+    <path id="trail" d="M180 50 C 180 120, 90 130, 90 200 S 270 290, 270 360 S 90 450, 90 520 S 180 610, 180 660"
+      fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" opacity=".85"/>
+    <circle cx="180" cy="50" r="7" fill="var(--ink)"/>
+  </svg>
+  <div class="label-start" id="startLabel" style="left:calc(50% + 14px);top:6.9%"></div>
+  <div class="traveler" id="traveler">🛵</div>
+</div>
+<div class="hint" id="hint"></div>
+<footer>made with ♥ &amp; a few lines of code</footer>
+
+<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<canvas id="confetti"></canvas>
+
+<script>
+/* =========================================================
+   ✏️ CHỈNH NỘI DUNG Ở ĐÂY — không cần đụng phần code bên dưới
+   ========================================================= */
+const CONFIG = {
+  to:   "Cậu",            // tên / cách gọi người ấy
+  from: "Mình",           // tên / cách xưng của bạn
+  date: "Chủ Nhật, 8/11", // ngày hẹn
+  traveler: "🛵",         // nhân vật đi trên bản đồ
+
+  start: {
+    place: "Ngõ 124 Hoàng Ngân",
+    time:  "10:30",
+    note:  "đón cậu"
+  },
+
+  // Food Station: mình đề xuất sẵn, không bắt chọn
+  food: {
+    time: "11:00",
+    name: "Sắp bật mí 🤫",         // ← tên quán
+    address: "Đang cập nhật",     // ← địa chỉ quán
+    desc: "Trạm đầu tiên: ăn trưa no nê trước đã, xem quái vật đánh nhau mà đói bụng thì không ổn đâu 😆 Quán mình chọn sẵn rồi, cậu chỉ cần mang theo cái bụng đói thôi."
+  },
+  cinema: {
+    time: "12:40",
+    place: "Rạp phim tại Vincom Sky Lake",
+    movie: "GODZILLA 🦖",
+    seat: "Cạnh nhau",
+    desc: "Trạm thứ hai: 12h40, Godzilla trên màn hình lớn. Vé và bắp nước để mình lo, cậu chỉ cần chọn vị bắp thôi.",
+    question: "Bắp vị gì đây?",
+    options: [["🧈","Bơ mặn"],["🍯","Caramel"],["🧀","Phô mai"],["🌗","Nửa nọ nửa kia"]]
+  },
+  chill: {
+    time: "Sau khi phim hết (~15:00)",
+    place: "Một quán cafe gần đó",
+    desc: "Trạm cuối: tìm một quán cafe ngồi xuống, kể nhau nghe đoạn nào trong phim là đỉnh nhất.",
+    question: "Đến quán thì cậu gọi gì?",
+    options: [["☕","Cà phê"],["🧋","Trà sữa"],["🍵","Matcha"],["🍹","Nước ép / sinh tố"]]
+  },
+  letter:
+`Gửi ${"{to}"},
+
+Cảm ơn cậu đã đi hết hành trình nhỏ này.
+Thật ra tất cả chỉ để hỏi một câu thôi:
+
+${"{date}"} này, cậu đi chơi với mình nhé?
+
+— ${"{from}"}`,
+  tip: "Trưa nắng mà trong rạp lại lạnh, nhớ mang áo khoác mỏng nha 🧥",
+  yes: "Đồng ý 💌",
+  no:  "Để suy nghĩ…",
+  doneTitle: "Hẹn gặp cậu nhé! 🎉",
+  doneText:  "Chụp màn hình này gửi lại cho mình là xong vé nha."
+};
+/* ========================================================= */
+
+const $ = s => document.querySelector(s);
+const fill = t => t.replaceAll("{to}",CONFIG.to).replaceAll("{from}",CONFIG.from).replaceAll("{date}",CONFIG.date);
+
+const STATIONS = [
+  {key:"food",   icon:"🍜", name:"Food Station",   tag:"Trạm 1", x:90,  y:200},
+  {key:"cinema", icon:"🎬", name:"Cinema Station", tag:"Trạm 2", x:270, y:360},
+  {key:"chill",  icon:"☕", name:"Chill Station",  tag:"Trạm 3", x:90,  y:520},
+  {key:"gift",   icon:"🎁", name:"Bí mật",          tag:"Đích đến", x:180, y:660},
+];
+const DECOS = [["🌳",40,90],["☁️",310,135],["🌸",310,180],["🏙️",320,250],["🌳",170,300],["🎡",40,330],
+               ["⭐",200,450],["🌲",300,480],["🌷",40,620],["✨",300,640],["🌳",270,580],["🐦",60,430]];
+
+const map = $("#map"), road = $("#road"), trail = $("#trail"), traveler = $("#traveler");
+const total = road.getTotalLength();
+const answers = {};
+let step = 0, curLen = 0, walking = false;
+
+$("#eyebrow").textContent = `Gửi ${CONFIG.to} ✦`;
+$("#subtitle").textContent = `Một chuyến phiêu lưu nho nhỏ · ${CONFIG.date}`;
+traveler.textContent = CONFIG.traveler;
+$("#startLabel").innerHTML = `📍 ${CONFIG.start.place}<small>${CONFIG.start.time} · ${CONFIG.start.note}</small>`;
+trail.style.strokeDasharray = total;
+trail.style.strokeDashoffset = total;
+
+const pct = (x,y) => ({left:(x/360*100)+"%", top:(y/720*100)+"%"});
+
+DECOS.forEach(([e,x,y])=>{
+  const d=document.createElement("div"); d.className="deco"; d.textContent=e;
+  Object.assign(d.style,pct(x,y)); map.appendChild(d);
+});
+
+// tìm vị trí (độ dài) trên đường gần mỗi trạm nhất
+STATIONS.forEach(s=>{
+  let best=0,bd=1e9;
+  for(let l=0;l<=total;l+=1){const p=road.getPointAtLength(l);const d=(p.x-s.x)**2+(p.y-s.y)**2;if(d<bd){bd=d;best=l}}
+  s.len=best;
+  const b=document.createElement("button");
+  b.className="station"+(s.key==="gift"?" gift":"");
+  b.innerHTML=`${s.icon}<span class="name">${s.name}</span>`;
+  Object.assign(b.style,pct(s.x,s.y));
+  b.onclick=()=>visit(STATIONS.indexOf(s));
+  s.el=b; map.appendChild(b);
+});
+
+function placeTraveler(len){
+  const p=road.getPointAtLength(len);
+  Object.assign(traveler.style,pct(p.x,p.y));
+  trail.style.strokeDashoffset = total-len;
+}
+placeTraveler(0);
+
+function refresh(){
+  STATIONS.forEach((s,i)=>{
+    s.el.classList.toggle("locked",i>step);
+    s.el.classList.toggle("active",i===step);
+    s.el.classList.toggle("done",i<step);
+  });
+  document.querySelectorAll("#progress span").forEach((el,i)=>el.classList.toggle("on",i<step));
+  $("#hint").textContent = step<3 ? `👉 Chạm vào ${STATIONS[step].name} để bắt đầu` :
+                           step===3 ? "🎁 Có một món quà đang chờ ở cuối đường…" : "";
+}
+refresh();
+
+function walkTo(target,cb){
+  walking=true;
+  const from=curLen, dist=Math.abs(target-from), dur=Math.max(600,dist*6);
+  const t0=performance.now(); let lastX=road.getPointAtLength(from).x;
+  (function frame(t){
+    const k=Math.min(1,(t-t0)/dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    const len=from+(target-from)*e, x=road.getPointAtLength(len).x;
+    if(Math.abs(x-lastX)>.3) traveler.classList.toggle("flip",x>lastX); lastX=x;
+    placeTraveler(len);
+    if(k<1) requestAnimationFrame(frame); else {curLen=target; walking=false; cb&&cb();}
+  })(t0);
+}
+
+function visit(i){
+  if(walking||i>step) return;
+  const s=STATIONS[i];
+  if(Math.abs(curLen-s.len)>2) walkTo(s.len,()=>open(i)); else open(i);
+}
+
+/* ---------- MODALS ---------- */
+const overlay=$("#overlay"), card=$("#card");
+function show(html){card.innerHTML=html;overlay.classList.add("show");card.scrollTop=0}
+function hide(){overlay.classList.remove("show")}
+overlay.addEventListener("click",e=>{if(e.target===overlay && step<4) hide()});
+
+function choicesHTML(key){
+  if(!CONFIG[key].options) return "";
+  return `<div class="q">${CONFIG[key].question}</div>
+  <div class="choices">${CONFIG[key].options.map(([e,t])=>
+    `<button class="choice${answers[key]===t?" sel":""}" data-v="${t}"><span class="e">${e}</span>${t}</button>`).join("")}</div>`;
+}
+function bindChoices(key,i){
+  const next=$("#next");
+  card.querySelectorAll(".choice").forEach(c=>c.onclick=()=>{
+    card.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
+    c.classList.add("sel"); answers[key]=c.dataset.v; next.disabled=false;
+  });
+  next.disabled = CONFIG[key].options ? !answers[key] : false;
+  next.onclick=()=>{hide(); if(i===step){step++; setTimeout(refresh,250)}};
+}
+
+function open(i){
+  const s=STATIONS[i], c=CONFIG[s.key];
+  if(s.key==="gift") return openGift();
+  let body="";
+  if(s.key==="cinema"){
+    body=`<div class="ticket"><div class="l"><small>ADMIT TWO · ${CONFIG.date.toUpperCase()}</small>
+      <div class="t">${c.movie}</div><div class="row"><span>Giờ<b>${c.time}</b></span><span>Ghế<b>${c.seat}</b></span></div></div>
+      <div class="r">${CONFIG.to}<br>&amp;<br>${CONFIG.from}</div></div>
+      <div class="info"><div><b>📍 Ở đâu</b><span>${c.place}</span></div></div>`;
+  } else if(s.key==="food"){
+    body=`<div class="info"><div><b>🕒 Mấy giờ</b><span>${c.time} · ${CONFIG.date}</span></div>
+      <div><b>🍽️ Quán</b><span>${c.name}</span></div>
+      <div><b>📍 Địa chỉ</b><span>${c.address}</span></div></div>`;
+  } else {
+    body=`<div class="info"><div><b>🕒 Mấy giờ</b><span>${c.time} · ${CONFIG.date}</span></div>
+      <div><b>📍 Ở đâu</b><span>${c.place}</span></div></div>`;
+  }
+  show(`<div class="big">${s.icon}</div><span class="tag">${s.tag}</span><h2>${s.name}</h2>
+    ${body}<p class="desc">${c.desc}</p>${choicesHTML(s.key)}
+    <button class="btn" id="next">${i<2?"Đi tiếp trạm sau →":"Đến đích thôi →"}</button>`);
+  bindChoices(s.key,i);
+}
+
+function openGift(){
+  show(`<div class="big">🎁</div><span class="tag">Đích đến</span><h2>Một lời nhắn nhỏ</h2>
+    <div class="letter">${fill(CONFIG.letter)}</div>
+    <div class="btn-row" id="row"><button class="btn" id="yesBtn">${CONFIG.yes}</button>
+    <button class="btn ghost" id="noBtn">${CONFIG.no}</button></div>`);
+  const no=$("#noBtn"); let tries=0;
+  const dodge=e=>{
+    e.preventDefault(); tries++;
+    const dx=(Math.random()*160-80), dy=-(Math.random()*120+20);
+    no.style.transform=`translate(${dx}px,${dy}px)`;
+    const msgs=["Nghĩ lâu quá đó 😗","Nút này hỏng rồi 🙈","Thử nút bên kia xem?","Thôi mà 🥺"];
+    no.textContent=msgs[(tries-1)%msgs.length];
+    if(tries>=5) no.style.display="none";
+  };
+  no.addEventListener("mouseenter",dodge);
+  no.addEventListener("click",dodge);
+  $("#yesBtn").onclick=finish;
+}
+
+function finish(){
+  step=4; refresh();
+  const st=CONFIG.start, f=CONFIG.food, m=CONFIG.cinema;
+  show(`<div class="done-screen"><div class="big">🥳</div><h2>${CONFIG.doneTitle}</h2>
+    <div class="summary"><b>📅 ${CONFIG.date}</b><br>
+    🛵 ${st.time} · đón ở ${st.place}<br>
+    🍜 ${f.time} · ăn trưa: <b>${f.name}</b><br>
+    🎬 ${m.time} · ${m.movie} · ghế ${m.seat} · bắp <b>${answers.cinema||"—"}</b><br>
+    ☕ Sau phim · cafe, gọi <b>${answers.chill||"—"}</b>
+    ${CONFIG.tip?`<br><br>💡 ${CONFIG.tip}`:""}</div>
+    <p class="desc">${CONFIG.doneText}</p></div>`);
+  confetti();
+}
+
+/* ---------- CONFETTI ---------- */
+function confetti(){
+  const cv=$("#confetti"),ctx=cv.getContext("2d");
+  cv.width=innerWidth;cv.height=innerHeight;
+  const cols=["#5b8fd9","#a8c8f0","#ffd9a8","#f7b9c8","#ffffff"];
+  const ps=Array.from({length:160},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.6,
+    r:4+Math.random()*5,c:cols[Math.random()*cols.length|0],vy:2+Math.random()*3,vx:Math.random()*2-1,a:Math.random()*6,va:Math.random()*.2-.1}));
+  const t0=performance.now();
+  (function f(t){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{p.y+=p.vy;p.x+=p.vx;p.a+=p.va;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);
+      ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);ctx.restore()});
+    if(t-t0<4500) requestAnimationFrame(f); else ctx.clearRect(0,0,cv.width,cv.height);
+  })(t0);
+}
+</script>
+</body>
+</html>

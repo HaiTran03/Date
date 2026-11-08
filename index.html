@@ -158,30 +158,32 @@ const CONFIG = {
 
   start: {
     place: "Ngõ 124 Hoàng Ngân",
-    time:  "10:30",
+    time:  "11:00",
     note:  "đón cậu"
   },
 
   // Food Station: mình đề xuất sẵn, không bắt chọn
   food: {
-    time: "11:00",
-    name: "Sắp bật mí 🤫",         // ← tên quán
-    address: "Đang cập nhật",     // ← địa chỉ quán
-    desc: "Trạm đầu tiên: ăn trưa no nê trước đã, xem quái vật đánh nhau mà đói bụng thì không ổn đâu 😆 Quán mình chọn sẵn rồi, cậu chỉ cần mang theo cái bụng đói thôi."
+    time: "11:30",
+    name: "Tiệm Matna Bunsik (맛나분식)",   // ← tên quán
+    address: "Số 2 Ngõ 179 Đình Thôn, Từ Liêm", // ← địa chỉ quán
+    desc: "Trạm đầu tiên: một tiệm đồ Hàn nhỏ nằm trong ngõ, do chủ người Hàn mở. Ăn trưa no nê trước đã, xem quái vật đánh nhau mà đói bụng thì không ổn đâu 😆 Cậu chỉ cần mang theo cái bụng đói thôi."
   },
   cinema: {
     time: "12:40",
-    place: "Rạp phim tại Vincom Sky Lake",
-    movie: "GODZILLA 🦖",
-    seat: "Cạnh nhau",
-    desc: "Trạm thứ hai: 12h40, Godzilla trên màn hình lớn. Vé và bắp nước để mình lo, cậu chỉ cần chọn vị bắp thôi.",
+    place: "CGV Vincom Sky Lake Phạm Hùng · Tầng 3",
+    movie: "GODZILLA TRỪ KHÔNG",
+    room: "Cinema 2",
+    end: "14:57",
+    seat: "F11 – F12",
+    desc: "Trạm thứ hai: vé đã đặt xong, ghế F11 – F12 là của hai đứa mình. Vé và bắp nước để mình lo, cậu chỉ cần chọn vị bắp thôi.",
     question: "Bắp vị gì đây?",
     options: [["🧈","Bơ mặn"],["🍯","Caramel"],["🧀","Phô mai"],["🌗","Nửa nọ nửa kia"]]
   },
   chill: {
     time: "Sau khi phim hết (~15:00)",
-    place: "Một quán cafe gần đó",
-    desc: "Trạm cuối: tìm một quán cafe ngồi xuống, kể nhau nghe đoạn nào trong phim là đỉnh nhất.",
+    place: "Sẽ bật mí sau 🤫",
+    desc: "Trạm cuối: đi cafe thôi ☕ Mình có mang theo máy ảnh 📷, cậu cứ thoải mái cầm nghịch nhé.",
     question: "Đến quán thì cậu gọi gì?",
     options: [["☕","Cà phê"],["🧋","Trà sữa"],["🍵","Matcha"],["🍹","Nước ép / sinh tố"]]
   },
@@ -312,7 +314,7 @@ function open(i){
   let body="";
   if(s.key==="cinema"){
     body=`<div class="ticket"><div class="l"><small>ADMIT TWO · ${CONFIG.date.toUpperCase()}</small>
-      <div class="t">${c.movie}</div><div class="row"><span>Giờ<b>${c.time}</b></span><span>Ghế<b>${c.seat}</b></span></div></div>
+      <div class="t">${c.movie}</div><div class="row"><span>Giờ<b>${c.time}</b></span><span>Phòng<b>${c.room}</b></span><span>Ghế<b>${c.seat}</b></span></div></div>
       <div class="r">${CONFIG.to}<br>&amp;<br>${CONFIG.from}</div></div>
       <div class="info"><div><b>📍 Ở đâu</b><span>${c.place}</span></div></div>`;
   } else if(s.key==="food"){
@@ -355,7 +357,8 @@ function finish(){
     <div class="summary"><b>📅 ${CONFIG.date}</b><br>
     🛵 ${st.time} · đón ở ${st.place}<br>
     🍜 ${f.time} · ăn trưa: <b>${f.name}</b><br>
-    🎬 ${m.time} · ${m.movie} · ghế ${m.seat} · bắp <b>${answers.cinema||"—"}</b><br>
+    🎬 ${m.time} – ${m.end} · ${m.movie}<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${m.room} · ghế <b>${m.seat}</b> · bắp <b>${answers.cinema||"—"}</b><br>
     ☕ Sau phim · cafe, gọi <b>${answers.chill||"—"}</b>
     ${CONFIG.tip?`<br><br>💡 ${CONFIG.tip}`:""}</div>
     <p class="desc">${CONFIG.doneText}</p></div>`);
